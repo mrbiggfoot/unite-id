@@ -1,6 +1,7 @@
 " unite source: id
 " Version: 0.1.0
-" Author : Milan Svoboda<milan.svoboda@centrum.cz>
+" Author : Milan Svoboda<milan.svoboda@centrum.cz>,
+"          Andrew Pyatkov <mrbiggfoot@gmail.com>
 " License: The MIT License
 
 let s:save_cpo = &cpo
@@ -19,12 +20,17 @@ let s:source = {
 function! s:source.hooks.on_init(args, context)
   let a:context.source__input = get(a:args, 0, '')
   if a:context.source__input == ''
-    let a:context.source__input = unite#util#input('Pattern: ')
+    let a:context.source__input = expand("<cword>")
   endif
 endfunction
 
 function! s:source.gather_candidates(args, context)
-    let l:result = unite#util#system(self.type . ' -R grep "' . a:context.source__input . '"')
+	let l:set_db_path_opt = ''
+	if exists("g:unite_ids_db_path")
+		let l:set_db_path_opt = ' --file="' . g:unite_ids_db_path . '"'
+	endif
+	let l:custom_opts = get(a:args, 1, '')
+    let l:result = unite#util#system(self.type . l:set_db_path_opt . ' ' . l:custom_opts . ' -R grep "' . a:context.source__input . '"')
     let l:matches = split(l:result, '\r\n\|\r\|\n')
     let l:entries = map(l:matches, 'split(v:val, ":")')
     return map(l:entries,
