@@ -14,7 +14,10 @@ call unite#util#set_default('g:unite_source_id_max_candidates', 1000)
 
 let s:source = {
 \   'action_table': {},
-\   'hooks' : {},
+\	'syntax': 'uniteSource__id',
+\	'hooks': {
+	\ 'on_syntax': function("unite#sources#id#on_syntax"),
+	\ },
 \ }
 
 function! s:source.hooks.on_init(args, context)
@@ -22,6 +25,11 @@ function! s:source.hooks.on_init(args, context)
   if a:context.source__input == ''
     let a:context.source__input = expand("<cword>")
   endif
+endfunction
+
+function! s:format_item(item)
+	return a:item[0] . ":" . a:item[1] . "\t" .
+	\ substitute(join(a:item[2:], ":"), '^\s\+', '', '')
 endfunction
 
 function! s:source.gather_candidates(args, context)
@@ -36,7 +44,7 @@ function! s:source.gather_candidates(args, context)
     return map(l:entries,
                 \ '{
                 \ "kind": "jump_list",
-                \ "word": v:val[0] . " |". v:val[1] ."| ".join(v:val[2:], ":"),
+                \ "word": s:format_item(v:val),
                 \ "action__path": v:val[0],
                 \ "action__line": v:val[1],
                 \ "action__text": join(v:val[2:], ":"),
@@ -50,6 +58,12 @@ function! unite#sources#id#define()
   \      'extend(copy(s:source),
   \       extend(v:val, {"name": "id/" . v:val.name,
   \      "description": "candidates from " . v:val.name}))')
+endfunction
+
+function! unite#sources#id#on_syntax(args, context)
+	syntax match uniteSource__id_Path /[^:]*:/he=e-1 contained containedin=uniteSource__id
+	syntax match uniteSource__id_LineNr /\d\+/ contained containedin=uniteSource__id
+	syntax match uniteSource__id_Item /\s\+.*/ contained containedin=uniteSource__id
 endfunction
 
 let &cpo = s:save_cpo
